@@ -13,15 +13,17 @@ import "package:flutter_bloc/flutter_bloc.dart";
 class ConnectionState
 {
   Socket? theServer = null;
+  bool listened = false;
 
-  ConnectionState( this.theServer );
+  ConnectionState( this.theServer, this.listened );
 }
 class ConnectionCubit extends Cubit<ConnectionState>
 {
-  ConnectionCubit() : super( ConnectionState( null) )
-  { connect(); }
+  ConnectionCubit() : super( ConnectionState( null, false) )
+  { if ( state.theServer==null ) { connect(); } }
 
-  update( Socket s ) { emit( ConnectionState(s) ); }
+  update( Socket s ) { emit( ConnectionState(s,state.listened) ); }
+  updateListen() { emit( ConnectionState(state.theServer, true ) ); }
 
   Future<void>  connect() async
   { await Future.delayed( const Duration(seconds:2) ); // adds drama
@@ -85,8 +87,9 @@ class Client2 extends StatelessWidget
     ConnectionState cs = cc.state;
     SaidCubit sc = BlocProvider.of<SaidCubit>(context);
 
-    if ( cs.theServer != null )
+    if ( cs.theServer != null && !cs.listened )
     { listen(context);
+      cc.updateListen();
     } 
 
     return Scaffold
@@ -96,10 +99,14 @@ class Client2 extends StatelessWidget
         [ // place to type and sent button
           SizedBox
           ( child: TextField(controller: tec) ),
-          ElevatedButton
-          ( onPressed: (){},
-            child: Text("send to client"),
-          ),
+          cs.theServer!=null
+          ?  ElevatedButton
+            ( onPressed: ()
+              { cs.theServer!.write ( tec.text ); 
+              },
+              child: Text("send to server"),
+            )
+          : Text("not ready"),
           cs.theServer!=null
           ? Text(sc.state.said)
           : Text("waiting for call to go through ..."),

@@ -19,15 +19,17 @@ class ConnectionState
 {
   bool listening = false;
   Socket? theClient = null;
+  bool listened = false;
 
-  ConnectionState( this.listening, this.theClient );
+  ConnectionState( this.listening, this.theClient, this.listened );
 }
 class ConnectionCubit extends Cubit<ConnectionState>
 {
-  ConnectionCubit() : super( ConnectionState(false, null) )
-  { connect(); }
+  ConnectionCubit() : super( ConnectionState(false, null, false) )
+  { if ( state.theClient==null) { connect(); } }
 
-  update( bool b, Socket s ) { emit( ConnectionState(b,s) ); }
+  update( bool b, Socket s ) { emit( ConnectionState(b,s, state.listened) ); }
+  updateListen() { emit( ConnectionState(true,state.theClient,true) ); }
 
   Future<void>  connect() async
   { await Future.delayed( const Duration(seconds:2) ); // adds drama
@@ -37,9 +39,9 @@ class ConnectionCubit extends Cubit<ConnectionState>
     // listen for clent connections to the server
     server.listen
     ( (client)
-      { emit( ConnectionState(true,client) ); }
+      { emit( ConnectionState(true,client, state.listened) ); }
     );
-    emit( ConnectionState(true,null) );
+    emit( ConnectionState(true,null, false) );
     print("server waiting for client");
   }
 }
@@ -96,8 +98,9 @@ class Server2 extends StatelessWidget
     ConnectionState cs = cc.state;
     SaidCubit sc = BlocProvider.of<SaidCubit>(context);
 
-    if ( cs.theClient != null )
+    if ( cs.theClient != null && !cs.listened )
     { listen(context);
+      cc.updateListen();
     } 
 
     return Scaffold
@@ -107,10 +110,14 @@ class Server2 extends StatelessWidget
         [ // place to type and sent button
           SizedBox
           ( child: TextField(controller: tec) ),
-          ElevatedButton
-          ( onPressed: (){},
-            child: Text("send to client"),
-          ),
+          cs.theClient!=null
+          ?  ElevatedButton
+            ( onPressed: ()
+              { cs.theClient!.write ( tec.text ); 
+              },
+              child: Text("send to client"),
+            )
+          : Text("not ready"),
           cs.listening
           ? cs.theClient!=null
             ? Text(sc.state.said)
