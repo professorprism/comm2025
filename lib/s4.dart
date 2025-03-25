@@ -158,7 +158,7 @@ class Server2 extends StatelessWidget
 
   // listen() tells the Socket to listen for messages from the
   // other side and what to do with them.    It assumes that
-  // theClient is there (checking my occur before this call).
+  // theClient is there (checking must occur before this call).
   // We also only want to do this ONCE.  We would have to
   // un-listen and then re-listen if we called this more than once.  ick.
   void listen( BuildContext bc )
