@@ -4,6 +4,13 @@
 
 // This runs with c4.dart.  Run this s4.dart first, then
 // run c4.dart along with it.  They should communicate.
+/*
+   must have 
+	<key>com.apple.security.network.client</key>
+	<true/>
+  in Runner/DebugProfile.entitlements and Runner/Release.entitlements
+
+*/
 
 // server.listen() defines a function that gets
 // called EVERY time a client calls the server.  We 
