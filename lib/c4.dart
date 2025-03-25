@@ -1,6 +1,10 @@
 // Barrett Koster
 // working from notes from Suragch
 
+/* To run this, run s4.dart first, then run this c4.dart.
+   The two should communicate.
+*/
+
 // client side of connection
 
 
@@ -12,19 +16,23 @@ import "package:flutter_bloc/flutter_bloc.dart";
 
 class ConnectionState
 {
-  Socket? theServer = null;
-  bool listened = false;
+  Socket? theServer = null; // Socket.  The Socket for client and 
+                            // server are really the same.  
+  bool listened = false; // true == listening has been started on this
+                         // Socket (do not re-started it)
 
   ConnectionState( this.theServer, this.listened );
 }
 class ConnectionCubit extends Cubit<ConnectionState>
-{
+{ // constructor.  Try to connect when you start.
   ConnectionCubit() : super( ConnectionState( null, false) )
   { if ( state.theServer==null ) { connect(); } }
 
   update( Socket s ) { emit( ConnectionState(s,state.listened) ); }
   updateListen() { emit( ConnectionState(state.theServer, true ) ); }
 
+  // connect() is async, so it may take a while.  OK.  When done, it
+  // emit()s a new ConnectionState, to say that we are connected.
   Future<void>  connect() async
   { await Future.delayed( const Duration(seconds:2) ); // adds drama
       // bind the socket server to an address and port
@@ -134,62 +142,3 @@ class Client2 extends StatelessWidget
   }
 }
 
-/*
-void main() async 
-{
-
-  // connect to the socket server
-  final socket = await Socket.connect('localhost', 9203);
-  print('Connected to: ${socket.remoteAddress.address}:${socket.remotePort}');
-
-  // listen for responses from the server
-  socket.listen(
-
-    // handle data from the server
-    (Uint8List data) {
-      final serverResponse = String.fromCharCodes(data);
-      print('Server: $serverResponse');
-    },
-
-    // handle errors
-    onError: (error) {
-      print(error);
-      socket.destroy();
-    },
-
-    // handle server ending connection
-    onDone: () {
-      print('Server left.');
-      socket.destroy();
-    },
-  );
-
-
-  print("talk: ");
-  String? sed = stdin.readLineSync();
-  while (sed! != "quit")
-  { print("trying to send: $sed");
-    await sendMessage(socket,sed);
-    print("talk: ");
-    sed = stdin.readLineSync();
-  }
-
-  /* 
-  // send some messages to the server
-  await sendMessage(socket, 'Knock, knock.');
-  await sendMessage(socket, 'Banana');
-  await sendMessage(socket, 'Banana');
-  await sendMessage(socket, 'Banana');
-  await sendMessage(socket, 'Banana');
-  await sendMessage(socket, 'Banana');
-  await sendMessage(socket, 'Orange');
-  await sendMessage(socket, "Orange you glad I didn't say banana again?");
-  */
-}
-
-Future<void> sendMessage(Socket socket, String message) async {
-  print('Client: $message');
-  socket.write(message);
-  // await Future.delayed(Duration(seconds: 2));
-}
-*/

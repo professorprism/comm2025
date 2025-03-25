@@ -1,8 +1,9 @@
 // s4.dart.  This is a GUI demo of socket connections.
 // Barrett Koster
 // working from notes from Suragch
-// ... and then from my s3.dart
 
+// This runs with c4.dart.  Run this s4.dart first, then
+// run c4.dart along with it.  They should communicate.
 
 // server.listen() defines a function that gets
 // called EVERY time a client calls the server.  We 
@@ -17,32 +18,42 @@ import "package:flutter_bloc/flutter_bloc.dart";
 
 class ConnectionState
 {
-  bool listening = false;
-  Socket? theClient = null;
-  bool listened = false;
+  bool listening = false; // true === server is waiting for a client to connect
+  Socket? theClient = null; // the client's Socket when connected
+  bool listened = false; // true === we are listening to client (we only
+                         // want to turn this on once, so ... )
 
   ConnectionState( this.listening, this.theClient, this.listened );
 }
 class ConnectionCubit extends Cubit<ConnectionState>
 {
+  // constructor.  make empty start, but then launch the async
+  // connect() that will make a connection.
   ConnectionCubit() : super( ConnectionState(false, null, false) )
   { if ( state.theClient==null) { connect(); } }
 
+  // when a connection is made, note the Socket
   update( bool b, Socket s ) { emit( ConnectionState(b,s, state.listened) ); }
+
+  // when we turn on listening on this Socket, make a not of that
   updateListen() { emit( ConnectionState(true,state.theClient,true) ); }
 
+  // connect() creates a ServerSocket and then it waits/listens, possibly
+  // forever, for Client to call.  
   Future<void>  connect() async
   { await Future.delayed( const Duration(seconds:2) ); // adds drama
       // bind the socket server to an address and port
     final server = await ServerSocket.bind(InternetAddress.anyIPv4, 9203);
     print("server socket created?");
-    // listen for clent connections to the server
+
+    // listen for clent connections to the server.
+    // When this function is triggered, it sets up the Sockets, nothing more.
     server.listen
     ( (client)
       { emit( ConnectionState(true,client, state.listened) ); }
     );
     emit( ConnectionState(true,null, false) );
-    print("server waiting for client");
+    // print("server waiting for client");
   }
 }
 
@@ -67,11 +78,13 @@ void main()
   runApp( Server () );
 }
 
+// The Server class just has the BLoC layers.  Note that the
+// Connection is outside the message, so we can connect once and
+// then re-build the message many times.
 class Server extends StatelessWidget
 { @override
   Widget build( BuildContext context )
-  {
-    return MaterialApp
+  { return MaterialApp
     ( title: "server",
       home: BlocProvider<ConnectionCubit>
       ( create: (context) => ConnectionCubit(),
@@ -89,6 +102,10 @@ class Server extends StatelessWidget
   }
 }
 
+// Server2 layer draws the window.  The window is
+// 1. a text field where you can type stuff
+// 2. a button to press to send what you typed 
+// 3. a text window showing what the other side has sent.
 class Server2 extends StatelessWidget
 { final TextEditingController tec = TextEditingController();
 
@@ -98,18 +115,27 @@ class Server2 extends StatelessWidget
     ConnectionState cs = cc.state;
     SaidCubit sc = BlocProvider.of<SaidCubit>(context);
 
+    // This 'listen' call is a little tricky.  We want to define the
+    // listener only once, so you might suppose we would put this code outside
+    // the message BLoC (which happens every time somebody says something).
+    // But the listen function itself needs access to the message BLoC
+    // because it uses the messagE BLoC to display what was heard.
+    // So we have a 'listened' flag that gets set the first time, so we
+    // only define Socket.listen( (){} ) once.
     if ( cs.theClient != null && !cs.listened )
     { listen(context);
-      cc.updateListen();
+      cc.updateListen(); // set the listened flag
     } 
 
     return Scaffold
     ( appBar: AppBar( title: Text("server") ),
       body: Column
       ( children:
-        [ // place to type and sent button
+        [ // place to type message
           SizedBox
           ( child: TextField(controller: tec) ),
+          // button to send message 
+          // (or "not ready" message if client is not there yet)
           cs.theClient!=null
           ?  ElevatedButton
             ( onPressed: ()
@@ -118,6 +144,8 @@ class Server2 extends StatelessWidget
               child: Text("send to client"),
             )
           : Text("not ready"),
+          // message from the other process (or local message
+          // if we are just getting started.
           cs.listening
           ? cs.theClient!=null
             ? Text(sc.state.said)
@@ -128,6 +156,11 @@ class Server2 extends StatelessWidget
     );
   }
 
+  // listen() tells the Socket to listen for messages from the
+  // other side and what to do with them.    It assumes that
+  // theClient is there (checking my occur before this call).
+  // We also only want to do this ONCE.  We would have to
+  // un-listen and then re-listen if we called this more than once.  ick.
   void listen( BuildContext bc )
   { ConnectionCubit cc = BlocProvider.of<ConnectionCubit>(bc);
     ConnectionState cs = cc.state;
@@ -145,88 +178,4 @@ class Server2 extends StatelessWidget
       },
     );
   }
-}
-
-// For each client, we need to have a thread that listens
-// for something from the client and does something about it.
-// In the case where a server is just a means of communication
-// between clients, those are all of the threads.
-// In the case where the server also interacts with its
-// user, it also needs its own thread (not attached to any client).
-
-// server side.  Run this in a terminal.
-// Than run the client.  Then type stuff at the prompt.
-// Note that it takes a couple of cycles to catch up ... 
-// the sync has not been worked out well.
-
-void main2() async
-{
-  Socket? theClient;
-
-  // bind the socket server to an address and port
-  final server = await ServerSocket.bind(InternetAddress.anyIPv4, 9203);
-  print("server socket created?");
-  // listen for clent connections to the server
-  server.listen((client) {
-    handleConnection(client);
-    theClient = client;
-  });
-
-  print("talk: ");
-  String? sed = stdin.readLineSync();
-  while (sed! != "quit")
-  { 
-    if ( theClient != null )
-    { print("trying to send: $sed");
-      await sendMessage(theClient!,sed);
-    }
-    else{ print("not ready");}
-    print("talk: ");
-    sed = stdin.readLineSync();
-  }
-
-  
-}
-
-void handleConnection(Socket client) {
-  print('Connection from'
-      ' ${client.remoteAddress.address}:${client.remotePort}');
-
-  Socket theClient = client;
-  // listen for events from the client
-  client.listen(
-
-    // handle data from the client
-    (Uint8List data) async {
-      // await Future.delayed(Duration(seconds: 1));
-      final message = String.fromCharCodes(data);
-      print("client: $message");
-      if (message == 'Knock, knock.') {
-        client.write('Who is there?');
-      } else if (message.length < 10) {
-        client.write('$message who?');
-      } else {
-        client.write('Very funny.');
-        client.close();
-      }
-    },
-
-    // handle errors
-    onError: (error) {
-      print(error);
-      client.close();
-    },
-
-    // handle the client closing the connection
-    onDone: () {
-      print('Client left');
-      client.close();
-    },
-  );
-}
-
-Future<void> sendMessage(Socket socket, String message) async {
-  print('Client: $message');
-  socket.write(message);
-  // await Future.delayed(Duration(seconds: 2));
 }
