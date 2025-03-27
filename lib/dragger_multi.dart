@@ -1,53 +1,73 @@
-// dragger.dart
+// dragger_multi.dart
 // Barrett Koster 2025
 // demo of dragging an object.
+// This one allows multiple tiles to be dragged
 
+import "dart:math";
 import "package:flutter/material.dart";
 import "package:flutter_bloc/flutter_bloc.dart";
+
+const double TILE_SIZE = 100;
 
 class Coords
 { double x, y;
   Coords(this.x,this.y);
+  double dist( Coords c )
+  { double xd = c.x - x;
+    double yd = c.y - y;
+    return sqrt( xd*xd + yd*yd );
+  }
+
+  Coords.copy( Coords c ) : x = c.x, y = c.y ; 
 }
 
-// DragState keeps track of the position of ONE box as you
-// drag it.  When you click down, it notes the offset from
-// where you clicked to the upper left corner, then 
-// maintains that as you move the mouse.  When you stop
-// dragging the postion is just where it is, zat.  
 class DragState
 {
-  Coords zat; // position of left corner of draggable box
+  List<Coords> zat; // position of each left corner of boxes
+  // Coords zat; // position of left corner of draggable box
   Coords offset; // while being dragged, position of mouse inside box
-  bool dragging; // true iff being dragged
+  //bool dragging; // true iff being dragged
+  int dragme = -1; // index in zat of box being dragged, -1 if none
 
-  DragState( this.zat, this.offset, this.dragging );
+  DragState( this.zat, this.offset, this.dragme );
 }
-
-// to-do: change this to DragCubi, no extension, and return
-// instead of emit from all update functions.
 class DragCubit extends Cubit<DragState>
 {
-  DragCubit( Coords here) : super( DragState(here, Coords(0,0), false ) );
+  DragCubit( List<Coords> here) : super( DragState(here, Coords(0,0), -1 ) );
 
-  // mouse goes down here, so establish the offset
+  // mouse goes down here, find the tile we are closest to,
+  // mark that one (dragme), and note the offset
   void down( TapDownDetails td ) 
-  { Coords here = Coords( td.localPosition.dx, td.localPosition.dy );
-    Coords off = Coords( here.x - state.zat.x, here.y - state.zat.y );
-    emit( DragState(state.zat, off, true ) );
+  { Coords mouse = Coords( td.localPosition.dx, td.localPosition.dy );
+    int dragme = 0;
+    double dragmed = 1000000;
+    for ( int i=0; i<state.zat.length; i++ )
+    { Coords p = Coords.copy(state.zat[i]); // center of square with next line
+      p.x += TILE_SIZE/2;  p.y += TILE_SIZE/2;
+      double d = mouse.dist(p); // how close is mouse to this tile
+      if ( d < dragmed )
+      { dragme = i;
+        dragmed = d;
+      }
+    }
+
+    Coords off = Coords( mouse.x - state.zat[dragme].x, 
+                         mouse.y - state.zat[dragme].y 
+                       );
+    emit( DragState(state.zat, off, dragme ) );
   }
   // we are dragging, so set the zat from this positoin minus offset
   void drag( DragUpdateDetails td ) 
-  { Coords here = Coords( td.localPosition.dx, td.localPosition.dy );
-    Coords z = Coords( here.x - state.offset.x, here.y - state.offset.y );
-    emit( DragState(z, state.offset, true ) );
+  { Coords mouse = Coords( td.localPosition.dx, td.localPosition.dy );
+    Coords z = Coords( mouse.x - state.offset.x, mouse.y - state.offset.y );
+    state.zat[state.dragme] = z;
+    emit( DragState(state.zat, state.offset, state.dragme ) );
   }
   void up( DragEndDetails de )
   {
-    emit( DragState(state.zat, Coords(0,0), false ) );
+    emit( DragState(state.zat, Coords(0,0), -1 ) );
   }
 }
-
 
 
 void main() // 23
@@ -64,7 +84,7 @@ class Dragger extends StatelessWidget
     return MaterialApp(
       title: 'Dragger',
       home: BlocProvider<DragCubit>
-      ( create: (context) => DragCubit( Coords(100,100) ),
+      ( create: (context) => DragCubit( [Coords(100,100),Coords(200,300),] ),
         child: BlocBuilder<DragCubit,DragState>
         ( builder: (context, state) 
           { return Dragger2();  },
@@ -82,6 +102,14 @@ class Dragger2 extends StatelessWidget
   @override
   Widget build( BuildContext context )
   { DragCubit dg = BlocProvider.of<DragCubit>(context);
+
+    int i=0;
+    List<Tile> kids = [];
+    for ( Coords c in dg.state.zat )
+    { kids.add( Tile("$i",c) );
+      i++;
+    }
+
     return Scaffold
     ( appBar: AppBar(title: Text("dragger")),
       body:  GestureDetector
@@ -89,11 +117,7 @@ class Dragger2 extends StatelessWidget
         onPanUpdate: (DragUpdateDetails pdd) { dg.drag(pdd); },
         onPanEnd: (DragEndDetails de) => dg.up(de),
         child: Stack
-        ( children:
-          [ Tile("W", dg.state.zat ), 
-            Tile("G", Coords(300, 150) ),
-          ]
-        ),
+        ( children: kids ),
       )
     );
   }
@@ -129,7 +153,7 @@ class Tile2 extends Positioned
   : super
     ( left: where.x, top: where.y,
       child: Container
-      ( height: 100, width: 100,
+      ( height: TILE_SIZE, width: TILE_SIZE,
         decoration: BoxDecoration
         ( //color: Colors.black,
           border: Border.all(width:2),
