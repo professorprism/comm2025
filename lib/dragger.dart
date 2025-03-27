@@ -21,6 +21,23 @@ class DragState
 class DragCubit extends Cubit<DragState>
 {
   DragCubit( Coords here) : super( DragState(here, Coords(0,0), false ) );
+
+  // mouse goes down here, so establish the offset
+  void down( TapDownDetails td ) 
+  { Coords here = Coords( td.localPosition.dx, td.localPosition.dy );
+    Coords off = Coords( here.x - state.zat.x, here.y - state.zat.y );
+    emit( DragState(state.zat, off, true ) );
+  }
+  // we are dragging, so set the zat from this positoin minus offset
+  void drag( DragUpdateDetails td ) 
+  { Coords here = Coords( td.localPosition.dx, td.localPosition.dy );
+    Coords z = Coords( here.x - state.offset.x, here.y - state.offset.y );
+    emit( DragState(z, state.offset, true ) );
+  }
+  void up( DragEndDetails de )
+  {
+    emit( DragState(state.zat, Coords(0,0), false ) );
+  }
 }
 
 
@@ -31,17 +48,40 @@ void main() // 23
 
 class Dragger extends StatelessWidget
 {
-  Dragger({super.key});
+  const Dragger({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Dragger',
+      home: BlocProvider<DragCubit>
+      ( create: (context) => DragCubit( Coords(100,100) ),
+        child: BlocBuilder<DragCubit,DragState>
+        ( builder: (context, state) 
+          { return Dragger2();  },
+        ),
+      ),
+    );
+  }
+
+}
+
+class Dragger2 extends StatelessWidget
+{
+  Dragger2({super.key});
 
   @override
   Widget build( BuildContext context )
-  { return MaterialApp
-    ( title: "dragger",
-      home:  Scaffold
-      ( appBar: AppBar(title: const Text("dragger")),
-        body: Stack
+  { DragCubit dg = BlocProvider.of<DragCubit>(context);
+    return Scaffold
+    ( appBar: AppBar(title: Text("dragger")),
+      body:  GestureDetector
+      ( onTapDown: (TapDownDetails td ) => dg.down(td),
+        onPanUpdate: (DragUpdateDetails pdd) { dg.drag(pdd); },
+        onPanEnd: (DragEndDetails de) => dg.up(de),
+        child: Stack
         ( children:
-          [ Tile("W", Coords(20, 40) ), 
+          [ Tile("W", dg.state.zat ), 
             Tile("G", Coords(300, 150) ),
           ]
         ),
@@ -57,24 +97,20 @@ class Tile extends StatelessWidget
 
   @override
   Widget build( BuildContext context )
-  { return BlocProvider<DragCubit>
-    ( create: (context) => DragCubit( here ),
-      child: BlocBuilder<DragCubit,DragState>
-      ( builder: (context,state)
-        { Coords here;
-          if ( state.dragging )
-          { here = Coords( state.zat.x - state.offset.x, 
-                           state.zat.y - state.offset.y 
-                         ); 
-          }
-          else
-          { here = Coords(state.zat.x, state.zat.y ); }
-  
-          return Tile2(face, here);
-        },
-      ),
-    );
+  { /*
+    if ( state.dragging )
+    { here = Coords( state.zat.x - state.offset.x, 
+                      state.zat.y - state.offset.y 
+                    ); 
+    }
+    else
+    { here = Coords(state.zat.x, state.zat.y ); }
+*/
+    return  Tile2(face, here);
   }
+      
+    
+
 }
 
 class Tile2 extends Positioned

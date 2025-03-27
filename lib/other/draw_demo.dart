@@ -11,9 +11,9 @@ class DrawDemo extends StatelessWidget
   const DrawDemo({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Draw Demo',
+  Widget build(BuildContext context) 
+  { return MaterialApp
+    ( title: 'Draw Demo',
       home: BlocProvider<SlabCubit>
       ( create: (context) => SlabCubit(),
         child: BlocBuilder<SlabCubit,SlabState>
