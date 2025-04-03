@@ -1,4 +1,12 @@
 // slab_state.dart
+// Barrett Koster 2024
+
+// SlabState holds the strokes that make up a drawing.
+// aPath starts empty, and as soon as you drag it gets
+// visible lines added to it.  aPath is also on the 
+// list of strokes that you draw.  When you stop
+// drawing one stroke/path, the cubit makes a new 
+// empty aPath, ready for the next drag.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -7,8 +15,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 class SlabState
 {
-  List<Path> strokes;
-  Path aPath;
+  List<Path> strokes; // list of paths already drawn
+  Path aPath; // the path you are in the middle of drawing now
 
   SlabState( this.strokes, this.aPath )
   {

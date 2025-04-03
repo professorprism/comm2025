@@ -7,6 +7,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../bb.dart';
 
+TextStyle ts25 = TextStyle( fontSize: 25 );
+
 class KeyboardState
 {
   bool showit = false;
@@ -16,6 +18,11 @@ class KeyboardCubit extends Cubit<KeyboardState>
 {
   KeyboardCubit() : super( KeyboardState(false) );
   set( bool s ) { emit( KeyboardState(s) ); }
+}
+
+class StringCubit extends Cubit<String>
+{  StringCubit() : super( "" );
+   say(String s) { emit(s); }
 }
 
 void main() async
@@ -37,8 +44,12 @@ class KD extends StatelessWidget
         body: BlocProvider<KeyboardCubit>
         ( create: (context) => KeyboardCubit(),
           child: BlocBuilder<KeyboardCubit,KeyboardState>
-          ( builder: (context,state)
-            { return KD1(); },
+          ( builder: (context,state) => BlocProvider<StringCubit>
+            ( create: (context) => StringCubit(),
+              child: BlocBuilder<StringCubit,String>
+              ( builder: (context, state) => KD1()
+              ),
+            ),
           ),
         ),
       ),
@@ -53,21 +64,30 @@ class KD1 extends StatelessWidget
   @override
   Widget build(BuildContext context)
   { KeyboardCubit kc = BlocProvider.of<KeyboardCubit>(context);
-    return Column
-    ( children:
-      [ BB("hi there"),
-        SizedBox
-        ( height: 50, width: 200,
-          child: Focus
-          ( onFocusChange:(hasFocus) { kc.set( hasFocus); },
-            child: TextField
-            ( controller:tec, style:TextStyle(fontSize: 25) ,
-              
-            ), 
+    StringCubit scub = BlocProvider.of<StringCubit>(context);
+
+    return Center
+    ( child: Column
+      ( children:
+        [ BB(scub.state),
+          SizedBox
+          ( height: 50, width: 200,
+            child: Focus
+            ( onFocusChange:(hasFocus) { kc.set( true); },
+              child: TextField( controller:tec, style:ts25, ), 
+            ),
           ),
-        ),
-        kc.state.showit ? KeyBoard( tec ) : Text("xxx"),
-      ],
+          ElevatedButton
+          ( onPressed: (){ scub.say( tec.text ); },
+            child: Text("accept"),
+          ),
+          ElevatedButton
+          ( onPressed: (){ kc.set( !kc.state.showit );  },
+            child: Text("keyboard"),
+          ),
+          kc.state.showit ? KeyBoard( tec ) : Text("xxx"),
+        ],
+      )
     );
   }
 }

@@ -23,8 +23,21 @@ class YakCubit extends Cubit<YakState>
 {
   // constructor for the client.  make empty start, but then launch the async
   // connect() that will make a connection.
-  YakCubit() : super( YakState( null, false) )
-  { connectClient(); }
+  YakCubit( String ip) : super( YakState( null, false) )
+  { connectClient(ip); }
+
+  // connectClient() calls the server and emits a socket when connected.
+  Future<void>  connectClient( String ip) async
+  { print("------------ YakCubit connectClient running ... ");
+
+    await Future.delayed( const Duration(seconds:2) ); // adds drama
+    
+    // connect to the socket server
+    final serv = await Socket.connect(ip, 9203); // localhost '207.151.52.155'
+    print('---------- Connected to: ${serv.remoteAddress.address}:${serv.remotePort}');
+    updateSocket(serv);
+  }
+
 
   // constructor for the server.  It needs the ServerSocket,
   // which it hangs out there to get a client to call (which
@@ -32,21 +45,6 @@ class YakCubit extends Cubit<YakState>
   YakCubit.server( ServerSocket? ss ) 
   : super( YakState(null, false ) )
   { if ( ss!=null ) { connectServer(ss); } }
-
-  updateSocket( Socket s ) { emit( YakState(s,false) ); }
-  updateListen() { emit( YakState(state.socket, true ) ); }
-
-  // connectClient() calls the server and emits a socket when connected.
-  Future<void>  connectClient() async
-  { print("------------ YakCubit connectClient running ... ");
-
-    await Future.delayed( const Duration(seconds:2) ); // adds drama
-    
-    // connect to the socket server
-    final serv = await Socket.connect('localhost', 9203); // localhost '207.151.52.155'
-    print('---------- Connected to: ${serv.remoteAddress.address}:${serv.remotePort}');
-    updateSocket(serv);
-  }
 
   // connectServer() is given a ServerSocket.  It listens for
   // client to call.  This can take forever, but assuming that a 
@@ -60,6 +58,10 @@ class YakCubit extends Cubit<YakState>
       }
     );
   }
+
+  updateSocket( Socket s ) { emit( YakState(s,false) ); }
+  updateListen() { emit( YakState(state.socket, true ) ); }
+
 
   // put this message on the socket (for the other end
   // to read.

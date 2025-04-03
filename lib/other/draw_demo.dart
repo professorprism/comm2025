@@ -2,6 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'slab_state.dart';
 
+/*
+  Demo of drawing.  
+  to-do: there is a glitch, that if you are moving when
+  you start to draw a path, it does not draw.  The reason
+  is that the code expects to draw a path with a TapDown, not a
+  PanUpdate.  We need to have PanUpdate do the same thing as
+  TapDown when it is the first of a Path.
+*/
+
 void main()
 { runApp(const DrawDemo());
 }
