@@ -26,8 +26,11 @@ class ServerCubit extends Cubit<ServerState>
   Future<void> connect() async
   { await Future.delayed( const Duration(seconds:2) ); // adds drama
     // bind the socket server to an address and port
-    ServerSocket s = await ServerSocket.bind(InternetAddress.anyIPv4, 9203);
+    // ServerSocket s = await ServerSocket.bind(InternetAddress.anyIPv4, 9203);
+    //ServerSocket s = await ServerSocket.bind("127.0.0.1", 9203);
+    ServerSocket s = await ServerSocket.bind("0.0.0.0", 9203);
     print("server socket created?");
+    print("server ip ${s.address}");
     emit( ServerState(s) );
   }
 }

@@ -23,6 +23,7 @@ class DrawDemo extends StatelessWidget
   Widget build(BuildContext context) 
   { return MaterialApp
     ( title: 'Draw Demo',
+      debugShowCheckedModeBanner: false,
       home: BlocProvider<SlabCubit>
       ( create: (context) => SlabCubit(),
         child: BlocBuilder<SlabCubit,SlabState>

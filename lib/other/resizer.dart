@@ -3,7 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
-import 'bb.dart';
+import '../bb.dart';
 
 void main() async
 { 
