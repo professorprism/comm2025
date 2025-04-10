@@ -40,12 +40,14 @@ class Dragger extends StatelessWidget
   Widget build(BuildContext context) {
     return MaterialApp
     ( title: 'Dragger',
-      home: BlocProvider<ACCubit>
-      ( create: (context) => ACCubit( SingleTickerProvider() ),
-        child: BlocBuilder<ACCubit, ACState>
-        ( builder: (context,state) => Dragger2(),
-        )
-      ),
+      home: 
+      //BlocProvider<ACCubit>
+      //( create: (context) => ACCubit( TickerProvider() ),
+      //  child: BlocBuilder<ACCubit, ACState>
+      //  ( builder: (context,state) => 
+          Dragger2(),
+      //  )
+      //),
     );
   }
 }

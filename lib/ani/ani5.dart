@@ -1,7 +1,7 @@
 // ani1.dart
 // Barrett Koster 2025
 // demo of implicit animation.
-
+import "dart:math";
 import "package:flutter/material.dart";
 import "package:flutter_bloc/flutter_bloc.dart";
 
@@ -31,6 +31,9 @@ class DragCubit extends Cubit<DragState>
     emit( DragState( here ) );
   }
 
+  void update( Coords c )
+  { emit( DragState(c) ); }
+
 }
 
 
@@ -49,7 +52,7 @@ class Dragger extends StatelessWidget
     return MaterialApp(
       title: 'Dragger',
       home: BlocProvider<DragCubit>
-      ( create: (context) => DragCubit( Coords(100,100) ),
+      ( create: (context) => DragCubit( Coords(200,200) ),
         child: BlocBuilder<DragCubit,DragState>
         ( builder: (context, state) 
           { return Dragger2();  },
@@ -57,8 +60,20 @@ class Dragger extends StatelessWidget
       ),
     );
   }
+
 }
 
+void mover( BuildContext context ) async
+{
+   DragCubit dg = BlocProvider.of<DragCubit>(context);
+
+   await Future.delayed( const Duration(seconds:3) );
+   Coords c = dg.state.zat;
+   c.x += Random().nextInt(100)-50;
+   c.y += Random().nextInt(100)-50;
+   dg.update(c);
+}
+ 
 class Dragger2 extends StatelessWidget
 {
   Dragger2({super.key});
@@ -66,6 +81,7 @@ class Dragger2 extends StatelessWidget
   @override
   Widget build( BuildContext context )
   { DragCubit dg = BlocProvider.of<DragCubit>(context);
+    mover(context);
     return Scaffold
     ( appBar: AppBar(title: Text("ani1")),
       body:  GestureDetector
