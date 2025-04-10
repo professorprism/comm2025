@@ -17,6 +17,8 @@ import 'package:path_provider/path_provider.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+// import 'package:flutter/services.dart' show rootBundle;
+
 class AState
 {
   AudioPlayer thep;
@@ -47,6 +49,7 @@ class ACubit extends Cubit<AState>
     // path = "assets/x.mp3"; hack
     print("trying to play $path");
     state.thep.play(AssetSource(path) );
+    // state.thep.play( path ) ;  
     // state.thep.play( AudioPlayer.asset("wef");
   }
 
